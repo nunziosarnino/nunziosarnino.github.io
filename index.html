@@ -3,39 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nunzio Sarnino | DVM, Dipl. ECVPH</title>
+    <title>Nunzio Sarnino | Veterinary Epidemiology</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
     <style>
-        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #fff; }
-        .container { max-width: 700px; margin: 100px auto; padding: 20px; }
-        h1 { font-family: "Garamond", serif; font-size: 3rem; margin-bottom: 5px; color: #111; letter-spacing: -1px; }
-        .subtitle { color: #666; font-size: 1.2rem; margin-bottom: 40px; font-weight: 300; border-bottom: 1px solid #eee; padding-bottom: 20px; }
-        .bio { font-size: 1.1rem; color: #444; margin-bottom: 40px; }
-        .btn { display: inline-block; border: 2px solid #333; color: #333; padding: 12px 30px; text-decoration: none; font-weight: 600; transition: all 0.3s; margin-right: 10px; }
-        .btn:hover { background: #333; color: #fff; }
-        .footer { margin-top: 80px; font-size: 0.9rem; color: #999; }
-        a { color: #333; }
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --bg: #ffffff;
+            --text: #333333;
+            --light-gray: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+        }
+
+        /* NAVIGATION */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 5%;
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid #eee;
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #666;
+            margin-left: 20px;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover { color: var(--accent); }
+
+        /* HERO SECTION */
+        .hero {
+            text-align: center;
+            padding: 80px 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        .hero .subtitle {
+            font-size: 1.2rem;
+            color: #7f8c8d;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+        }
+
+        /* ABOUT SECTION */
+        .about {
+            max-width: 700px;
+            margin: 0 auto 60px auto;
+            text-align: center;
+            padding: 0 20px;
+        }
+        
+        /* Circular Profile Image (Optional) */
+        .profile-img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        /* PROJECT GRID (Like Natalia's site) */
+        .work-section {
+            background-color: var(--light-gray);
+            padding: 60px 5%;
+        }
+
+        .section-title {
+            text-align: center;
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            margin-bottom: 40px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .card-img {
+            height: 180px;
+            background-color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+        
+        /* Gradients for cards so they look good without photos */
+        .game-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .cv-bg { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); color: white; }
+        .research-bg { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+
+        .card-content {
+            padding: 25px;
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .card p {
+            font-size: 0.9rem;
+            color: #666;
+            margin: 0;
+        }
+
+        /* FOOTER */
+        footer {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 0.8rem;
+        }
+
+        /* Responsive Mobile */
+        @media (max-width: 600px) {
+            .hero h1 { font-size: 2.5rem; }
+            nav { flex-direction: column; gap: 10px; }
+            .nav-links a { margin: 0 10px; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Nunzio Sarnino</h1>
-        <div class="subtitle">DVM, Dipl. ECVPH • Researcher in Veterinary Epidemiology</div>
-        
-        <div class="bio">
-            <p>I am a Veterinarian and European Specialist in Public Health (Population Medicine) based in Berlin.</p>
-            <p>Currently, I am a Researcher and PhD Candidate at <strong>Freie Universität Berlin</strong>, focusing on Quantitative Microbial Risk Assessment (QMRA) and antimicrobial resistance in environmental pathways.</p>
-            <p>My work bridges complex data analysis with public health policy, drawing on experience from the German Federal Institute for Risk Assessment (BfR) and veterinary regulation in the Netherlands.</p>
-        </div>
 
-        <a href="cv.pdf" class="btn" target="_blank">Download CV (PDF)</a>
-        <<a href="/amr_game/" class="btn" style="background-color: #2c3e50; border: 2px solid #2c3e50; color: white; margin-top: 10px;">
-    🎮 Play: AMR Clinical Decision Support
-</a>
-        <a href="mailto:sarninonunzio@gmail.com" class="btn" style="border-color: transparent;">Contact Me &rarr;</a>
-        
-        <div class="footer">
-            &copy; 2026 Nunzio Sarnino. Berlin, Germany.
+    <nav>
+        <a href="#" class="logo">NS.</a>
+        <div class="nav-links">
+            <a href="#">About</a>
+            <a href="#work">Work & Projects</a>
+            <a href="cv.pdf" target="_blank">CV</a>
+            <a href="mailto:sarninonunzio@gmail.com">Contact</a>
         </div>
-    </div>
+    </nav>
+
+    <section class="hero">
+        <h1>Nunzio Sarnino</h1>
+        <div class="subtitle">DVM, Dipl. ECVPH • Berlin, Germany</div>
+    </section>
+
+    <section class="about">
+        <p>
+            I am a Veterinarian and European Specialist in Public Health (Population Medicine). 
+            Currently, I am a Researcher and PhD Candidate at <strong>Freie Universität Berlin</strong>, 
+            focusing on Quantitative Microbial Risk Assessment (QMRA) and antimicrobial resistance in environmental pathways.
+        </p>
+        <p>
+            My work bridges complex data analysis with public health policy, drawing on experience from the 
+            German Federal Institute for Risk Assessment (BfR) and veterinary regulation in the Netherlands.
+        </p>
+    </section>
+
+    <section class="work-section" id="work">
+        <h2 class="section-title">Selected Work</h2>
+        
+        <div class="grid">
+            
+            <a href="/amr-game/" class="card">
+                <div class="card-img game-bg">🎮</div>
+                <div class="card-content">
+                    <h3>AMR Clinical Decision Game</h3>
+                    <p>An interactive serious game designed to train veterinarians on antimicrobial stewardship guidelines. Play right in your browser.</p>
+                </div>
+            </a>
+
+            <a href="cv.pdf" class="card" target="_blank">
+                <div class="card-img cv-bg">📄</div>
+                <div class="card-content">
+                    <h3>Curriculum Vitae</h3>
+                    <p>Download my full academic CV, including publication list, project history, and ECVPH credentials.</p>
+                </div>
+            </a>
+
+            <a href="https://www.vetmed.fu-berlin.de/" class="card" target="_blank">
+                <div class="card-img research-bg">🔬</div>
+                <div class="card-content">
+                    <h3>Research & QMRA</h3>
+                    <p>My ongoing PhD work at Freie Universität Berlin involving environmental risk modeling.</p>
+                </div>
+            </a>
+
+        </div>
+    </section>
+
+    <footer>
+        &copy; 2026 Nunzio Sarnino. Built with GitHub Pages.
+    </footer>
+
 </body>
 </html>
