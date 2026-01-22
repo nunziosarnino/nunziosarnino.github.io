@@ -85,7 +85,7 @@
             padding: 0 20px;
         }
         
-        /* Circular Profile Image (Optional) */
+        /* Circular Profile Image (Uncomment if you upload profile.jpg later) */
         .profile-img {
             width: 150px;
             height: 150px;
@@ -95,7 +95,7 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
-        /* PROJECT GRID (Like Natalia's site) */
+        /* PROJECT GRID */
         .work-section {
             background-color: var(--light-gray);
             padding: 60px 5%;
@@ -112,7 +112,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 30px;
-            max-width: 1000px;
+            max-width: 800px; /* Reduced width since we only have 2 items now */
             margin: 0 auto;
         }
 
@@ -134,18 +134,26 @@
         }
 
         .card-img {
-            height: 180px;
-            background-color: #ddd;
+            height: 200px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 3rem;
+            overflow: hidden;
         }
         
-        /* Gradients for cards so they look good without photos */
         .game-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-        .cv-bg { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); color: white; }
-        .research-bg { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+        
+        /* Style specifically for the ENVIRE image */
+        .envire-bg { 
+            background-color: #0d4643; /* Dark teal matching the logo */
+            padding: 0;
+        }
+        .envire-bg img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures the image fills the box nicely */
+        }
 
         .card-content {
             padding: 25px;
@@ -216,23 +224,17 @@
                 <div class="card-img game-bg">🎮</div>
                 <div class="card-content">
                     <h3>AMR Clinical Decision Game</h3>
-                    <p>An interactive serious game designed to train veterinarians on antimicrobial stewardship guidelines. Play right in your browser.</p>
+                    <p>An interactive serious game designed to train veterinarians on antimicrobial stewardship guidelines.</p>
                 </div>
             </a>
 
-            <a href="cv.pdf" class="card" target="_blank">
-                <div class="card-img cv-bg">📄</div>
-                <div class="card-content">
-                    <h3>Curriculum Vitae</h3>
-                    <p>Download my full academic CV, including publication list, project history, and ECVPH credentials.</p>
+            <a href="https://github.com/ENVIRE-JPIAMR" class="card" target="_blank">
+                <div class="card-img envire-bg">
+                    <img src="envire.png" alt="ENVIRE Project Logo">
                 </div>
-            </a>
-
-            <a href="https://www.vetmed.fu-berlin.de/" class="card" target="_blank">
-                <div class="card-img research-bg">🔬</div>
                 <div class="card-content">
-                    <h3>Research & QMRA</h3>
-                    <p>My ongoing PhD work at Freie Universität Berlin involving environmental risk modeling.</p>
+                    <h3>ENVIRE Project</h3>
+                    <p>Reducing the selection and spread of antibiotic resistance in the environment. View the project repositories.</p>
                 </div>
             </a>
 
