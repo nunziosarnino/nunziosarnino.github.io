@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSI Training: Clinical Decision Support</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-desk: #5d4037; --bg-wall: #2c3e50;
+            --paper: #f4eec7; --ink: #2c2c2c;
+            --stamp-red: #c0392b; --stamp-green: #27ae60; --stamp-blue: #2980b9;
+        }
+        * { box-sizing: border-box; user-select: none; }
+        body {
+            font-family: 'VT323', monospace; background-color: var(--bg-wall);
+            margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; color: var(--ink);
+        }
+        #top-bar {
+            background: #000; color: #0f0; padding: 5px 20px; display: flex;
+            justify-content: space-between; font-size: 1.5rem; border-bottom: 4px solid #333; z-index: 100;
+        }
+        #desk {
+            flex: 1; background-color: var(--bg-desk); position: relative;
+            background-image: linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
+            background-size: 20px 20px; display: flex; justify-content: center; align-items: center;
+        }
+        #clipboard {
+            width: 550px; height: 720px; background-color: #8b4513; border-radius: 10px;
+            box-shadow: 10px 10px 20px rgba(0,0,0,0.4); position: relative; transition: transform 0.5s;
+            display: flex; justify-content: center; padding-top: 50px;
+        }
+        .paper-sheet {
+            width: 500px; height: 640px; background-color: var(--paper); padding: 25px;
+            font-size: 1.25rem; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 8px;
+        }
+        #clip {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 40px;
+            background: #95a5a6; border-radius: 0 0 10px 10px; z-index: 10;
+        }
+        h2 { margin: 0; text-transform: uppercase; text-decoration: underline; text-align: center; font-size: 1.8rem; }
+        .section { border: 2px solid var(--ink); padding: 8px; position: relative; margin-top: 12px; }
+        .section-title { position: absolute; top: -14px; left: 10px; background: var(--paper); padding: 0 5px; font-weight: bold; }
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 2px; border-bottom: 1px dotted #aaa; }
+        .abnormal { color: var(--stamp-red); font-weight: bold; }
+        .warning-box { border: 2px dashed var(--stamp-red); background: rgba(192, 57, 43, 0.1); padding: 5px; margin-top: 5px; font-weight: bold; text-align: center;}
+        
+        #stamp-rack {
+            position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: center; gap: 30px; z-index: 50;
+        }
+        .stamp-tool {
+            width: 100px; height: 100px; border-radius: 50%; cursor: pointer; transition: transform 0.1s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-weight: bold; color: white; box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 0 #000; font-size: 1.2rem; border: 4px solid rgba(255,255,255,0.2);
+        }
+        .stamp-tool:active { transform: scale(0.9); }
+        .stamp-tool.green { background: var(--stamp-green); }
+        .stamp-tool.red { background: var(--stamp-red); }
+        .stamp-tool.blue { background: var(--stamp-blue); }
+
+        .ink-mark {
+            position: absolute; bottom: 100px; right: 40px; border: 5px solid; padding: 10px 20px;
+            font-size: 3rem; transform: rotate(-15deg); opacity: 0; pointer-events: none;
+            text-transform: uppercase; font-weight: bold; mix-blend-mode: multiply;
+        }
+        .mark-approved { color: var(--stamp-green); border-color: var(--stamp-green); }
+        .mark-denied { color: var(--stamp-red); border-color: var(--stamp-red); }
+        .mark-changed { color: var(--stamp-blue); border-color: var(--stamp-blue); }
+
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6);
+            display: none; justify-content: center; align-items: center; z-index: 200;
+        }
+        .pixel-modal {
+            background: #fff; border: 4px solid #000; padding: 20px; width: 600px;
+            box-shadow: 10px 10px 0 #000; font-size: 1.3rem;
+            max-height: 85vh; overflow-y: auto;
+        }
+        .pixel-modal::-webkit-scrollbar { width: 10px; }
+        .pixel-modal::-webkit-scrollbar-track { background: #eee; }
+        .pixel-modal::-webkit-scrollbar-thumb { background: #000; }
+
+        .pixel-btn {
+            background: #000; color: #fff; border: none; padding: 10px; font-family: inherit; font-size: 1.2rem;
+            cursor: pointer; margin-top: 5px; width: 100%;
+        }
+        .pixel-btn:hover { background: #333; }
+        
+        /* DESK ITEMS */
+        #manual-btn {
+            position: absolute; top: 20px; right: 20px; width: 120px; height: 160px;
+            background: #2c3e50; color: white; border: 2px solid #fff;
+            display: flex; justify-content: center; align-items: center; text-align: center;
+            cursor: pointer; box-shadow: 5px 5px 10px rgba(0,0,0,0.4); transform: rotate(5deg);
+        }
+
+        /* NEW POST-GAME BUTTONS */
+        #post-game-controls {
+            position: absolute; top: 200px; right: 20px; 
+            display: none; /* Hidden until decision made */
+            flex-direction: column; gap: 15px;
+        }
+        
+        .control-btn {
+            width: 140px; padding: 15px; font-family: 'VT323'; font-size: 1.3rem; font-weight: bold;
+            border: 4px solid #000; cursor: pointer; box-shadow: 5px 5px 0 rgba(0,0,0,0.5);
+            text-align: center; transition: transform 0.1s;
+        }
+        .control-btn:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 rgba(0,0,0,0.5); }
+        
+        #btn-report { background: #f1c40f; color: black; }
+        #btn-next { background: #e74c3c; color: white; animation: pulse 2s infinite; }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        
+        .guide-section { margin-bottom: 20px; border-bottom: 2px dashed #ccc; padding-bottom: 10px; }
+        .guide-header { background: #000; color: #fff; padding: 2px 10px; display: inline-block; font-weight: bold; margin-bottom: 10px; }
+        .guide-warn { color: #c0392b; font-weight: bold; background: #fadbd8; padding: 2px 5px; }
+    </style>
+</head>
+<body>
+
+<div id="top-bar">
+    <div>SSI / NRL-AMR</div>
+    <div id="score-display">ACCURACY: 100%</div>
+    <div id="clock">08:00 AM</div>
+</div>
+
+<div id="desk">
+    <div id="manual-btn" onclick="toggleGuidelines()">AMS<br>GUIDELINES<br>2026<br><br><small>(Read)</small></div>
+    
+    <div id="post-game-controls">
+        <div id="btn-report" class="control-btn" onclick="showFeedback()">📄 VIEW<br>REPORT</div>
+        <div id="btn-next" class="control-btn" onclick="nextPatient()">➡ NEXT<br>PATIENT</div>
+    </div>
+
+    <div id="clipboard">
+        <div id="clip"></div>
+        <div class="paper-sheet" id="paper-content"></div>
+        <div id="ink-mark" class="ink-mark">APPROVED</div>
+    </div>
+    
+    <div id="stamp-rack">
+        <div class="stamp-tool red" onclick="stamp('stop')">🛑<br>STOP</div>
+        <div class="stamp-tool green" onclick="stamp('keep')">✅<br>APPROVE</div>
+        <div class="stamp-tool blue" onclick="openPrescriptionPad()">💊<br>CHANGE</div>
+    </div>
+</div>
+
+<div id="rx-modal" class="overlay">
+    <div class="pixel-modal" style="background: #eeffff;">
+        <h2>PRESCRIPTION PAD</h2>
+        <p>Switch therapy to:</p>
+        <button class="pixel-btn" onclick="stamp('switch_Penicillin V')">Penicillin V</button>
+        <button class="pixel-btn" onclick="stamp('switch_Cefuroxime')">Cefuroxime</button>
+        <button class="pixel-btn" onclick="stamp('switch_Nitrofurantoin')">Nitrofurantoin</button>
+        <button class="pixel-btn" onclick="stamp('switch_Pivmecillinam')">Pivmecillinam</button>
+        <button class="pixel-btn" style="background: #999;" onclick="closeOverlays()">CANCEL</button>
+    </div>
+</div>
+
+<div id="guide-modal" class="overlay" onclick="closeOverlays()">
+    <div class="pixel-modal">
+        <h2 style="border-bottom: 4px solid black; padding-bottom: 10px;">CLINICAL GUIDELINES 2026</h2>
+        
+        <div class="guide-section">
+            <div class="guide-header">1. GENERAL PRINCIPLES</div>
+            <p>• <strong>Start Smart:</strong> Use narrow spectrum whenever possible.</p>
+            <p>• <strong>Biomarkers:</strong> Use Procalcitonin (PCT) to distinguish bacterial vs viral.</p>
+            <ul>
+                <li>PCT < 0.25 µg/L: Viral likely (STOP Antibiotics).</li>
+                <li>PCT > 0.5 µg/L: Bacterial likely.</li>
+            </ul>
+        </div>
+
+        <div class="guide-section">
+            <div class="guide-header">2. URINARY TRACT (UTI)</div>
+            <p><strong>Cystitis (Lower UTI):</strong></p>
+            <ul>
+                <li>First Line: Nitrofurantoin 50mg q6h OR Pivmecillinam 400mg TID.</li>
+                <li><span class="guide-warn">CONTRAINDICATION:</span> Do NOT use Nitrofurantoin if eGFR < 45 mL/min (Risk of toxicity/inefficacy). Use Pivmecillinam.</li>
+            </ul>
+            <p><strong>Pyelonephritis (Upper UTI):</strong></p>
+            <ul>
+                <li>Requires systemic levels. Use Cefuroxime 750mg-1.5g IV.</li>
+            </ul>
+             <p><strong>Asymptomatic Bacteriuria (ASB):</strong></p>
+            <ul>
+                <li>Positive culture but NO symptoms? <span class="guide-warn">DO NOT TREAT.</span> (Except in pregnancy/urological procedures).</li>
+            </ul>
+        </div>
+
+        <div class="guide-section">
+            <div class="guide-header">3. RESPIRATORY TRACT</div>
+            <p><strong>Community Acquired Pneumonia (CAP):</strong></p>
+            <ul>
+                <li>First Line: Penicillin V (Phenoxymethylpenicillin).</li>
+                <li><span class="guide-warn">ALLERGY ALERT:</span> If Penicillin Allergy (Rash/Anaphylaxis), switch to Cefuroxime or Macrolide (Clarithromycin).</li>
+            </ul>
+        </div>
+
+        <div class="guide-section">
+            <div class="guide-header">4. SEPSIS / UNKNOWN</div>
+            <ul>
+                <li>Empiric Broad Spectrum (e.g. Meropenem/Pip-Taz) is allowed initially if septic shock present.</li>
+                <li>De-escalate immediately once microbiology is known.</li>
+            </ul>
+        </div>
+
+        <p style="font-size: 0.8rem; text-align: center; color: #555;">[CLICK ANYWHERE TO CLOSE]</p>
+    </div>
+</div>
+
+<div id="feedback-modal" class="overlay">
+    <div class="pixel-modal">
+        <h2 id="fb-title">AUDIT REPORT</h2>
+        <div id="fb-msg" style="margin: 20px 0; font-family: monospace; background: #eee; padding: 10px;">...</div>
+        
+        <button class="pixel-btn" onclick="closeOverlays()">🔎 REVIEW PATIENT FILE</button>
+        <button class="pixel-btn" style="background: var(--stamp-green);" onclick="nextPatient()">➡ NEXT PATIENT</button>
+    </div>
+</div>
+
+<script>
+    // --- ADVANCED MEDICAL ENGINE ---
+
+    const NAMES_FIRST = ["Nunzio", "Alessandro", "Giulia", "Sofia", "Francesco", "Antonio", "Maria", "Giuseppe", "Davide", "Francesca", "Elena", "Marco", "Roberto", "Luca", "Chiara", "Giovanni"];
+    const NAMES_LAST = ["Sarnino", "Rossi", "Esposito", "Russo", "Bianchi", "Romano", "Gallo", "Costa", "Fontana", "Ricci", "Marino", "Greco", "Bruno", "De Luca"];
+    
+    const ARCHETYPES = {
+        "viral_uri": {
+            name: "Viral URI",
+            temp: [37.2, 38.5], crp: [10, 60], wbc: [4, 11], pct: [0.05, 0.2], 
+            symptoms: ["Runny nose", "Dry cough", "Sore throat", "Myalgia"],
+            micro: "Sputum: Normal flora.",
+            badRxOptions: ["Amoxicillin 500mg PO", "Azithromycin 500mg PO", "Cefuroxime 750mg IV"],
+            baseAction: "stop",
+            reasoning: "PCT < 0.25 and viral symptoms support stopping antibiotics."
+        },
+        "cystitis": {
+            name: "Simple Cystitis",
+            temp: [36.5, 37.8], crp: [5, 40], wbc: [8, 13], pct: [0.05, 0.1], 
+            symptoms: ["Dysuria (Pain)", "Frequency", "Urgency", "Suprapubic pain"],
+            micro: "Urine: E. coli > 10^5 CFU/mL.",
+            badRxOptions: ["Ciprofloxacin 500mg PO", "Meropenem 1g IV", "Piperacillin-Tazobactam 4g IV"],
+            baseAction: "switch_Nitrofurantoin",
+            reasoning: "Uncomplicated cystitis. Nitrofurantoin is first-line and narrow spectrum."
+        },
+        "pneumonia": {
+            name: "CAP (Pneumonia)",
+            temp: [38.5, 40.2], crp: [80, 300], wbc: [14, 28], pct: [1.5, 10.0], 
+            symptoms: ["Productive cough", "Dyspnea", "Chest pain", "Dullness to percussion"],
+            micro: "Sputum: Gram+ Diplococci (Pneumococcus).",
+            badRxOptions: ["Meropenem 1g IV", "Piperacillin-Tazobactam 4g IV", "Ciprofloxacin 400mg IV"],
+            baseAction: "switch_Penicillin V",
+            reasoning: "Pneumococcal Pneumonia target is Penicillin V (Narrow Spectrum)."
+        },
+        "asb": {
+            name: "Asymptomatic Bacteriuria",
+            temp: [36.5, 37.2], crp: [2, 8], wbc: [4, 9], pct: [0.05, 0.1],
+            symptoms: ["Smelly urine", "Cloudy urine", "Catheter present", "No pain"],
+            micro: "Urine: E. coli (ESBL POS) > 10^5.",
+            badRxOptions: ["Nitrofurantoin 50mg PO", "Ciprofloxacin 500mg PO", "Meropenem 1g IV"],
+            baseAction: "stop",
+            reasoning: "Bacteria present but NO symptoms (ASB). Guidelines say: Do Not Treat, even if ESBL."
+        }
+    };
+
+    let currentPatient = null;
+    let score = 100;
+    let isTransitioning = false;
+    let caseResolved = false;
+
+    // GENERATOR
+    function generatePatient() {
+        const keys = Object.keys(ARCHETYPES);
+        const typeKey = keys[Math.floor(Math.random() * keys.length)];
+        const template = ARCHETYPES[typeKey];
+        
+        const age = Math.floor(Math.random() * 60) + 20; 
+        const temp = (Math.random() * (template.temp[1] - template.temp[0]) + template.temp[0]).toFixed(1);
+        const crp = Math.floor(Math.random() * (template.crp[1] - template.crp[0]) + template.crp[0]);
+        const wbc = (Math.random() * (template.wbc[1] - template.wbc[0]) + template.wbc[0]).toFixed(1);
+        const pct = (Math.random() * (template.pct[1] - template.pct[0]) + template.pct[0]).toFixed(2);
+        
+        let allergy = "None";
+        if (Math.random() < 0.2) allergy = "Penicillin (Rash)"; 
+
+        let egfr = 90;
+        if (age > 70) egfr = Math.floor(Math.random() * 40) + 20; 
+        else egfr = Math.floor(Math.random() * 40) + 60; 
+
+        const rxOptions = template.badRxOptions;
+        const currentRx = rxOptions[Math.floor(Math.random() * rxOptions.length)];
+
+        return {
+            name: NAMES_FIRST[Math.floor(Math.random()*NAMES_FIRST.length)] + " " + NAMES_LAST[Math.floor(Math.random()*NAMES_LAST.length)],
+            age: age,
+            diagnosis: template.name,
+            story: `${age}y old. ${template.symptoms.sort(() => 0.5 - Math.random()).slice(0, 2).join(", ")}.`,
+            vitals: `Temp: ${temp}°C | BP: 120/80`,
+            labs: `CRP: ${crp} | PCT: ${pct} | WBC: ${wbc} | eGFR: ${egfr}`,
+            micro: template.micro,
+            allergy: allergy,
+            egfr: egfr,
+            currentRx: currentRx,
+            baseAction: template.baseAction,
+            baseReasoning: template.reasoning,
+            isAbnormal: { temp: temp > 38.0, crp: crp > 50, pct: pct > 0.5, egfr: egfr < 45 }
+        };
+    }
+
+    function loadNewCase() {
+        currentPatient = generatePatient();
+        caseResolved = false;
+        isTransitioning = false;
+        
+        // Hide post game controls
+        document.getElementById('post-game-controls').style.display = 'none';
+
+        const p = currentPatient;
+        const paper = document.getElementById('paper-content');
+        
+        // Reset Visuals
+        document.getElementById('ink-mark').style.opacity = '0';
+        document.getElementById('clipboard').style.transform = 'translateY(0)';
+
+        // Render with Allergy/Renal Warning
+        let allergyHTML = p.allergy !== "None" ? `<div class="warning-box">⚠️ ALLERGY: ${p.allergy}</div>` : "None";
+        let renalHTML = p.egfr < 45 ? `<span class="abnormal">${p.egfr} mL/min (LOW)</span>` : p.egfr;
+        let pctClass = p.isAbnormal.pct ? 'abnormal' : '';
+
+        paper.innerHTML = `
+            <h2>PT: ${p.name.toUpperCase()}</h2>
+            <div class="section">
+                <span class="section-title">PATIENT DETAILS</span>
+                <div class="data-row"><span>Age:</span> <span>${p.age}</span></div>
+                <div class="data-row"><span>Allergies:</span> <span>${allergyHTML}</span></div>
+            </div>
+
+            <div class="section">
+                <span class="section-title">CLINICAL NOTES</span>
+                <p>${p.story}</p>
+                <div class="data-row"><span>Vitals:</span> <span class="${p.isAbnormal.temp ? 'abnormal' : ''}">${p.vitals}</span></div>
+            </div>
+
+            <div class="section">
+                <span class="section-title">LABORATORY</span>
+                <div class="data-row"><span>Biochem:</span> <span class="${p.isAbnormal.crp ? 'abnormal' : ''}">${p.labs}</span></div>
+                <div class="data-row"><span>Procalcitonin:</span> <span class="${pctClass}">${p.labs.split('|')[1].split(':')[1]}</span></div>
+                <div class="data-row"><span>eGFR (Kidney):</span> <span>${renalHTML}</span></div>
+                <div class="data-row"><span>Microbio:</span> <span>${p.micro}</span></div>
+            </div>
+
+            <div class="section" style="border-color: var(--stamp-red);">
+                <span class="section-title" style="color: var(--stamp-red);">CURRENT RX</span>
+                <div style="text-align: center; font-weight: bold; margin: 5px 0;">${p.currentRx}</div>
+            </div>
+        `;
+    }
+
+    function stamp(action) {
+        if (isTransitioning || caseResolved) return;
+        closeOverlays();
+        
+        const mark = document.getElementById('ink-mark');
+        mark.style.opacity = '1';
+        mark.style.transform = 'rotate(-15deg) scale(1)';
+        
+        if (action === 'stop') { mark.innerText = 'STOPPED'; mark.className = 'ink-mark mark-denied'; }
+        else if (action === 'keep') { mark.innerText = 'APPROVED'; mark.className = 'ink-mark mark-approved'; }
+        else { mark.innerText = 'CHANGED'; mark.className = 'ink-mark mark-changed'; }
+
+        isTransitioning = true;
+        setTimeout(() => evaluateDecision(action), 800);
+    }
+
+    // THE BRAIN: Checks Contraindications
+    function evaluateDecision(action) {
+        const p = currentPatient;
+        let result = "correct";
+        let msg = p.baseReasoning;
+
+        // --- STEP 1: CHECK FOR FATAL CONTRAINDICATIONS FIRST ---
+        
+        // 1a. Penicillin Allergy + Penicillin V
+        if (p.allergy.includes("Penicillin") && action === "switch_Penicillin V") {
+            result = "harm";
+            msg = "CRITICAL ERROR: Patient has Penicillin Allergy! You could have caused Anaphylaxis. Use Cefuroxime.";
+            applyResult(result, msg);
+            return;
+        }
+
+        // 1b. Renal Failure + Nitrofurantoin
+        if (p.egfr < 45 && action === "switch_Nitrofurantoin") {
+            result = "harm";
+            msg = "RENAL ERROR: Nitrofurantoin is contraindicated when eGFR < 45. Use Pivmecillinam.";
+            applyResult(result, msg);
+            return;
+        }
+
+        // --- STEP 2: CHECK FOR CORRECT OVERRIDES (The "Smart" Plays) ---
+
+        // 2a. Renal Override
+        if (p.diagnosis === "Simple Cystitis" && p.egfr < 45 && action === "switch_Pivmecillinam") {
+            result = "correct";
+            msg = "Excellent! You avoided Nitrofurantoin due to low Renal Function.";
+            applyResult(result, msg);
+            return;
+        }
+
+        // 2b. Allergy Override
+        if (p.diagnosis === "CAP (Pneumonia)" && p.allergy.includes("Penicillin") && action === "switch_Cefuroxime") {
+            result = "correct";
+            msg = "Excellent! You avoided Penicillin due to Allergy and chose the correct alternative.";
+            applyResult(result, msg);
+            return;
+        }
+
+        // --- STEP 3: CHECK STANDARD PROTOCOL ---
+        
+        if (action !== p.baseAction) {
+            result = "wrong";
+            msg = `Standard protocol suggests ${p.baseAction.replace('switch_', '')}.`;
+        }
+
+        applyResult(result, msg);
+    }
+
+    function applyResult(result, msg) {
+        caseResolved = true;
+        
+        const fbTitle = document.getElementById('fb-title');
+        const fbMsg = document.getElementById('fb-msg');
+        
+        if (result === "correct") {
+            fbTitle.innerText = "DECISION CORRECT"; fbTitle.style.color = "var(--stamp-green)";
+        } else if (result === "harm") {
+            fbTitle.innerText = "PATIENT HARMED"; fbTitle.style.color = "var(--stamp-red)";
+            score -= 20;
+        } else {
+            fbTitle.innerText = "PROTOCOL ERROR"; fbTitle.style.color = "var(--stamp-red)";
+            score -= 10;
+        }
+        
+        fbMsg.innerText = msg;
+        document.getElementById('score-display').innerText = `ACCURACY: ${score}%`;
+        
+        // SHOW FEEDBACK MODAL
+        document.getElementById('feedback-modal').style.display = 'flex';
+        
+        // SHOW POST-GAME CONTROLS ON DESK
+        document.getElementById('post-game-controls').style.display = 'flex';
+    }
+
+    function showFeedback() {
+        document.getElementById('feedback-modal').style.display = 'flex';
+    }
+
+    function nextPatient() {
+        closeOverlays();
+        document.getElementById('clipboard').style.transform = 'translateY(100vh)';
+        setTimeout(() => { loadNewCase(); }, 500);
+    }
+
+    function openPrescriptionPad() { 
+        if(caseResolved) return; 
+        document.getElementById('rx-modal').style.display = 'flex'; 
+    }
+    
+    function toggleGuidelines() { document.getElementById('guide-modal').style.display = 'flex'; }
+    function closeOverlays() { document.querySelectorAll('.overlay').forEach(el => el.style.display = 'none'); }
+    function updateClock() { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }
+
+    window.onload = function() { loadNewCase(); setInterval(updateClock, 1000); };
+</script>
+</body>
+</html>
