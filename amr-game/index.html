@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SSI Training: Clinical Decision Support</title>
+    <title>AMR Training: Clinical Decision Support</title>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -69,8 +69,8 @@
         .mark-changed { color: var(--stamp-blue); border-color: var(--stamp-blue); }
 
         .overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6);
-            display: none; justify-content: center; align-items: center; z-index: 200;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
+            display: flex; justify-content: center; align-items: center; z-index: 200;
         }
         .pixel-modal {
             background: #fff; border: 4px solid #000; padding: 20px; width: 600px;
@@ -122,7 +122,7 @@
 <body>
 
 <div id="top-bar">
-    <div>SSI / NRL-AMR</div>
+    <div>AMR TRAINING SIM</div>
     <div id="score-display">ACCURACY: 100%</div>
     <div id="clock">08:00 AM</div>
 </div>
@@ -148,7 +148,35 @@
     </div>
 </div>
 
-<div id="rx-modal" class="overlay">
+<div id="tutorial-modal" class="overlay">
+    <div class="pixel-modal">
+        <h2 style="background:black; color:white; padding:5px;">WELCOME TO THE LAB</h2>
+        <p><strong>ROLE:</strong> Antimicrobial Stewardship Officer</p>
+        <p><strong>MISSION:</strong> Review prescriptions. Stop unnecessary antibiotics, change dangerous ones, and approve correct ones.</p>
+        <hr style="border:1px dashed #000;">
+        <p><strong>HOW TO PLAY:</strong></p>
+        <ul>
+            <li>🛑 <strong>STOP:</strong> For Viral infections or Asymptomatic bacteria.</li>
+            <li>✅ <strong>APPROVE:</strong> If the therapy matches the guidelines.</li>
+            <li>💊 <strong>CHANGE:</strong> If the drug is wrong, resistant, or contraindicated (e.g. Allergy, Kidney Failure).</li>
+        </ul>
+        <hr style="border:1px dashed #000;">
+        <p><strong>WIN CONDITION:</strong> Reach <strong>250%</strong> Accuracy.</p>
+        <p><strong>LOSE CONDITION:</strong> Drop to <strong>0%</strong>.</p>
+        
+        <button class="pixel-btn" style="background: var(--stamp-green); margin-top: 20px;" onclick="startGame()">START SHIFT</button>
+    </div>
+</div>
+
+<div id="game-over-modal" class="overlay" style="display:none;">
+    <div class="pixel-modal" style="text-align:center;">
+        <h2 id="end-title" style="font-size: 3rem;">GAME OVER</h2>
+        <p id="end-msg" style="font-size: 1.5rem;">...</p>
+        <button class="pixel-btn" onclick="location.reload()">RESTART SIMULATION</button>
+    </div>
+</div>
+
+<div id="rx-modal" class="overlay" style="display:none;">
     <div class="pixel-modal" style="background: #eeffff;">
         <h2>PRESCRIPTION PAD</h2>
         <p>Switch therapy to:</p>
@@ -160,7 +188,7 @@
     </div>
 </div>
 
-<div id="guide-modal" class="overlay" onclick="closeOverlays()">
+<div id="guide-modal" class="overlay" style="display:none;" onclick="closeOverlays()">
     <div class="pixel-modal">
         <h2 style="border-bottom: 4px solid black; padding-bottom: 10px;">CLINICAL GUIDELINES 2026</h2>
         
@@ -179,7 +207,7 @@
             <p><strong>Cystitis (Lower UTI):</strong></p>
             <ul>
                 <li>First Line: Nitrofurantoin 50mg q6h OR Pivmecillinam 400mg TID.</li>
-                <li><span class="guide-warn">CONTRAINDICATION:</span> Do NOT use Nitrofurantoin if eGFR < 45 mL/min (Risk of toxicity/inefficacy). Use Pivmecillinam.</li>
+                <li><span class="guide-warn">CONTRAINDICATION:</span> Do NOT use Nitrofurantoin if eGFR < 45 mL/min (Risk of toxicity). Use Pivmecillinam.</li>
             </ul>
             <p><strong>Pyelonephritis (Upper UTI):</strong></p>
             <ul>
@@ -212,7 +240,7 @@
     </div>
 </div>
 
-<div id="feedback-modal" class="overlay">
+<div id="feedback-modal" class="overlay" style="display:none;">
     <div class="pixel-modal">
         <h2 id="fb-title">AUDIT REPORT</h2>
         <div id="fb-msg" style="margin: 20px 0; font-family: monospace; background: #eee; padding: 10px;">...</div>
@@ -271,6 +299,14 @@
     let score = 100;
     let isTransitioning = false;
     let caseResolved = false;
+    let gameStarted = false;
+
+    function startGame() {
+        document.getElementById('tutorial-modal').style.display = 'none';
+        gameStarted = true;
+        loadNewCase();
+        setInterval(updateClock, 1000);
+    }
 
     // GENERATOR
     function generatePatient() {
@@ -316,17 +352,14 @@
         caseResolved = false;
         isTransitioning = false;
         
-        // Hide post game controls
         document.getElementById('post-game-controls').style.display = 'none';
 
         const p = currentPatient;
         const paper = document.getElementById('paper-content');
         
-        // Reset Visuals
         document.getElementById('ink-mark').style.opacity = '0';
         document.getElementById('clipboard').style.transform = 'translateY(0)';
 
-        // Render with Allergy/Renal Warning
         let allergyHTML = p.allergy !== "None" ? `<div class="warning-box">⚠️ ALLERGY: ${p.allergy}</div>` : "None";
         let renalHTML = p.egfr < 45 ? `<span class="abnormal">${p.egfr} mL/min (LOW)</span>` : p.egfr;
         let pctClass = p.isAbnormal.pct ? 'abnormal' : '';
@@ -361,7 +394,7 @@
     }
 
     function stamp(action) {
-        if (isTransitioning || caseResolved) return;
+        if (!gameStarted || isTransitioning || caseResolved) return;
         closeOverlays();
         
         const mark = document.getElementById('ink-mark');
@@ -376,33 +409,27 @@
         setTimeout(() => evaluateDecision(action), 800);
     }
 
-    // THE BRAIN: Checks Contraindications
     function evaluateDecision(action) {
         const p = currentPatient;
         let result = "correct";
         let msg = p.baseReasoning;
 
-        // --- STEP 1: CHECK FOR FATAL CONTRAINDICATIONS FIRST ---
-        
-        // 1a. Penicillin Allergy + Penicillin V
+        // --- STEP 1: FATAL CONTRAINDICATIONS ---
         if (p.allergy.includes("Penicillin") && action === "switch_Penicillin V") {
             result = "harm";
-            msg = "CRITICAL ERROR: Patient has Penicillin Allergy! You could have caused Anaphylaxis. Use Cefuroxime.";
+            msg = "CRITICAL ERROR: Patient has Penicillin Allergy! Anaphylaxis Risk. Use Cefuroxime.";
             applyResult(result, msg);
             return;
         }
 
-        // 1b. Renal Failure + Nitrofurantoin
         if (p.egfr < 45 && action === "switch_Nitrofurantoin") {
             result = "harm";
-            msg = "RENAL ERROR: Nitrofurantoin is contraindicated when eGFR < 45. Use Pivmecillinam.";
+            msg = "RENAL ERROR: Nitrofurantoin contraindicated when eGFR < 45. Use Pivmecillinam.";
             applyResult(result, msg);
             return;
         }
 
-        // --- STEP 2: CHECK FOR CORRECT OVERRIDES (The "Smart" Plays) ---
-
-        // 2a. Renal Override
+        // --- STEP 2: OVERRIDES ---
         if (p.diagnosis === "Simple Cystitis" && p.egfr < 45 && action === "switch_Pivmecillinam") {
             result = "correct";
             msg = "Excellent! You avoided Nitrofurantoin due to low Renal Function.";
@@ -410,7 +437,6 @@
             return;
         }
 
-        // 2b. Allergy Override
         if (p.diagnosis === "CAP (Pneumonia)" && p.allergy.includes("Penicillin") && action === "switch_Cefuroxime") {
             result = "correct";
             msg = "Excellent! You avoided Penicillin due to Allergy and chose the correct alternative.";
@@ -418,8 +444,7 @@
             return;
         }
 
-        // --- STEP 3: CHECK STANDARD PROTOCOL ---
-        
+        // --- STEP 3: STANDARD ---
         if (action !== p.baseAction) {
             result = "wrong";
             msg = `Standard protocol suggests ${p.baseAction.replace('switch_', '')}.`;
@@ -436,6 +461,7 @@
         
         if (result === "correct") {
             fbTitle.innerText = "DECISION CORRECT"; fbTitle.style.color = "var(--stamp-green)";
+            score += 10;
         } else if (result === "harm") {
             fbTitle.innerText = "PATIENT HARMED"; fbTitle.style.color = "var(--stamp-red)";
             score -= 20;
@@ -447,11 +473,37 @@
         fbMsg.innerText = msg;
         document.getElementById('score-display').innerText = `ACCURACY: ${score}%`;
         
-        // SHOW FEEDBACK MODAL
+        // CHECK GAME OVER
+        if (score <= 0) {
+            endGame(false);
+            return;
+        }
+        if (score >= 250) {
+            endGame(true);
+            return;
+        }
+
+        // SHOW FEEDBACK
         document.getElementById('feedback-modal').style.display = 'flex';
-        
-        // SHOW POST-GAME CONTROLS ON DESK
         document.getElementById('post-game-controls').style.display = 'flex';
+    }
+
+    function endGame(win) {
+        const modal = document.getElementById('game-over-modal');
+        const title = document.getElementById('end-title');
+        const msg = document.getElementById('end-msg');
+        
+        modal.style.display = 'flex';
+        
+        if (win) {
+            title.innerText = "PROMOTION GRANTED";
+            title.style.color = "var(--stamp-green)";
+            msg.innerText = "Congratulations! Your Stewardship Accuracy reached 250%. You are ready to lead the NRL-AMR team.";
+        } else {
+            title.innerText = "LICENSE REVOKED";
+            title.style.color = "var(--stamp-red)";
+            msg.innerText = "Accuracy dropped to 0%. Review the guidelines and try again.";
+        }
     }
 
     function showFeedback() {
@@ -473,7 +525,8 @@
     function closeOverlays() { document.querySelectorAll('.overlay').forEach(el => el.style.display = 'none'); }
     function updateClock() { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }
 
-    window.onload = function() { loadNewCase(); setInterval(updateClock, 1000); };
+    // DO NOT START AUTOMATICALLY. WAIT FOR TUTORIAL.
+    // window.onload = function() { ... }; 
 </script>
 </body>
 </html>
